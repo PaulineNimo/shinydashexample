@@ -1,0 +1,76 @@
+#map <- readOGR(paste0(getwd(),"/data/global.json"))
+map <- readOGR(paste0(getwd(),"/data/Africa_Cont_country.geojson"))
+data <- read.csv(paste0(getwd(),"/data/Statistical Capacity Indicators.csv"), stringsAsFactors = F, header = T)
+input <- list(indicator = data$Series.Name[2],year = 2016)
+sel_data <- data %>% 
+    filter(Series.Name == input$indicator) %>%
+    select(Country.Name ,contains(as.character(input$year)))
+#sel_df <- merge(map@data, sel_data, by.x = "CNTRY_NAME", by.y = "Country.Name", all.x = T, sort = T)
+sel_df <- left_join(map@data, sel_data, by = c("CNTRY_NAME" = "Country.Name"))
+sel_df <- sel_df[,-c(1:7)]
+sel_df[,2] <- as.numeric(sel_df[,2])
+pal <- colorBin("BuPu", domain = sel_df[,2], bins = 5)
+labels <- sprintf(
+    "<strong>%s</strong><br/>%g",
+    sel_df[,1], sel_df[,2]
+) %>% lapply(htmltools::HTML)
+leaflet(map) %>% 
+    setView(lng = 0, lat = 0, zoom = 2) %>%
+    addTiles() %>% 
+    addPolygons(
+        fillColor = ~pal(sel_df[,2]),
+        weight = 1,
+        opacity = 1,
+        color = 'white',
+        dashArray = '1',
+        fillOpacity = 0.7,
+        highlight = highlightOptions(
+            weight = 2,
+            color = "#666",
+            dashArray = "",
+            fillOpacity = 0.7,
+            bringToFront = TRUE),
+        label = labels,
+        labelOptions = labelOptions(
+            style = list("font-weight" = "normal", padding = "3px 8px"),
+            textsize = "15px",
+            direction = "auto")
+    ) %>%
+    addLegend(pal = pal, values = ~sel_df[,2], opacity = 0.7, title = NULL,
+              position = "bottomright")
+
+output$mapPlot <- renderLeaflet({ 
+    leaflet(map) %>% 
+        setView(lng = 0, lat = 0, zoom = 1) %>%
+        addTiles()
+})
+observe({
+    pal <- colorBin("BuPu", domain = data_fil()[,2], bins = 5)
+    labels <- sprintf(
+        "<strong>%s</strong><br/>%g",
+        data_fil()[,1], data_fil()[,2]
+    ) %>% lapply(htmltools::HTML)
+    leafletProxy("mapPlot") %>% 
+        addPolygons(
+            fillColor = ~pal(data_fil()[,2]),
+            weight = 1,
+            opacity = 1,
+            color = 'white',
+            dashArray = '1',
+            fillOpacity = 0.7,
+            highlight = highlightOptions(
+                weight = 2,
+                color = "#666",
+                dashArray = "",
+                fillOpacity = 0.7,
+                bringToFront = TRUE),
+            label = labels,
+            labelOptions = labelOptions(
+                style = list("font-weight" = "normal", padding = "3px 8px"),
+                textsize = "15px",
+                direction = "auto")
+        ) %>%
+        addLegend(pal = pal, values = ~data_fil()[,2], opacity = 0.7, title = NULL,
+                  position = "bottomright")
+})
+
