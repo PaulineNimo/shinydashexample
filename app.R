@@ -35,7 +35,7 @@ ui <- dashboardPage(title = "Authentication App", skin = "black",
 #####
 #server
 server <- function(input, output, session) {
-    data <- read.csv(paste0(getwd(),"/data/Statistical Capacity Indicators.csv"), stringsAsFactors = F, header = T)
+    data <- read.csv(paste0(getwd(), "/data/Statistical Capacity Indicators.csv"), stringsAsFactors = F, header = T)
     #country_list <- unique(data$Country.Name)
     #observe({
     #    updateSelectInput(session, "country", choices = country_list)
