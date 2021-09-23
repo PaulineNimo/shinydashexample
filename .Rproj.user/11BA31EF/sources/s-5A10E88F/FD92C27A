@@ -3,7 +3,7 @@
     "path": "C:/Users/pauni/Desktop/Work/GitHub/shinydashexample/app.R",
     "project_path": "app.R",
     "type": "r_source",
-    "hash": "0",
+    "hash": "4230900237",
     "contents": "",
     "dirty": false,
     "created": 1632407794913.0,
@@ -12,15 +12,15 @@
     "properties": {
         "source_window_id": "",
         "Source": "Source",
-        "cursorPosition": "13,75",
-        "scrollLine": "4"
+        "cursorPosition": "26,43",
+        "scrollLine": "16"
     },
     "folds": "",
-    "lastKnownWriteTime": 1632408964,
+    "lastKnownWriteTime": 1632409222,
     "encoding": "UTF-8",
     "collab_server": "",
     "source_window": "",
-    "last_content_update": 1632408964432,
+    "last_content_update": 1632409222762,
     "read_only": false,
     "read_only_alternatives": []
 }

@@ -24,12 +24,12 @@ ui <- dashboardPage(title = "Statistical Capacity Indicators", skin = "blue",
         tabItems(
             tabItem("dashboard",   
                 fluidRow(
-                    box(title = "Controls", width = 3, 
+                    box(title = "Indicators", width = 3, 
                         #selectInput("country", "Select Country", c("Choose:")),
                         selectInput("indicator", "Select Indicator", c("Choose:")),
                         sliderInput("year", "Select Year", value = 0, min = 0, max = 0, sep = ""),
                         collapsible = T, collapsed = F),
-                    box(title = "Map", width = 9,
+                    box(title = "Map of Africa", width = 9,
                         leafletOutput("mapPlot", height = 500), collapsible = T, collapsed = F)
                 )
             ),
