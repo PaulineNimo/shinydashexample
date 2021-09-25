@@ -1,0 +1,95 @@
+# setting working directory for the files
+# can be changed
+setwd("C:/Users/pauni/Desktop/Work/Hayley/Mat")
+#files_path <- "C:/Users/pauni/Desktop/Work/Hayley/"
+filesPath <- getwd()
+
+# function
+MatrixLoopingFunction <- function(filesPath){
+    # loading libraries
+    library(igraph)
+    library(tidyverse)
+    library(janitor)
+    library(data.table)
+
+    # checking for matrix file pattern
+    # file names are sorted alphabetically
+    matrixFiles <- list.files(filesPath, pattern = "^Matrix\\d+[.]csv$")
+    # checking for AA file pattern
+    aaFiles <- list.files(filesPath, pattern = "^AA\\d+[.]csv$")
+    # initializing empty AA dataframe
+    CompleteAADF <- data.frame(stringsAsFactors = F)
+
+    # loop
+    for(i in 1:length(matrixFiles)){
+      # reading in matrix csv data
+      # removing first column: previously was made into row names
+      # but due to converting df to matrix, no need for row names
+      mat <- read.csv(matrixFiles[i], header=T)[,-1]
+      mat[mat == ""] <- NA
+      mat <- as.matrix(mat)
+      # removing empty rows and columns as a square matrix is needed
+      # some files have rows and columns with NA
+      mat <- remove_empty(mat, which = c("rows", "cols"), quiet = TRUE)
+      graph <- graph_from_adjacency_matrix(mat)
+      degree <- centr_degree(graph, mode = "all")
+      centrality <- degree$res
+
+      # make sure corresponding AA file is loaded
+      fileNumMat <- gsub("Matrix(.+)[.]csv", "\\1", matrixFiles[i])
+
+      # get correct AA file name
+      aaCorrespondFile <- paste0("AA", fileNumMat, ".csv")
+
+      if(file.exists(aaCorrespondFile)){
+        # reading in AA csv file
+        aa <- read.csv(aaCorrespondFile, header=T, stringsAsFactors = F)
+        # removing some unnecessary columns: appear to be dummy
+        aa <- aa[!grepl("^X", colnames(aa))]
+        # replacing empty strings with NA for easy removal
+        aa[aa == ""] <- NA
+        # removing empty rows
+        aa <- remove_empty(aa, which = c("rows"), quiet = TRUE)
+        # some data cleaning
+        aa$Gender <- str_trim(aa$Gender)
+        aa$Gender[aa$Gender == "F"|aa$Gender == F] <- "Female"
+        aa$Gender[aa$Gender == "M"] <- "Male"
+        # one case where number of values do not match up
+        # picking first x values depending on rows in aa
+        aa$degreeCentrality <- centrality
+        # one column names changed
+        colnames(aa)[2] <- "Formal.informal"
+        aa$Formal.informal <- str_trim(aa$Formal.informal)
+        # adding file number to dataframe
+        aa$matNum <- fileNumMat
+        CompleteAADF <- rbind(CompleteAADF, aa)
+      }
+    }
+    # extracting summary values from files
+    # having removed tranpose and only using pivoting
+    gender <- CompleteAADF %>%
+      filter(!is.na(Gender)) %>%
+      group_by(matNum, Gender) %>%
+      summarise(Centrality=mean(degreeCentrality, na.rm=T)) %>%
+      pivot_wider(names_from = Gender, values_from = Centrality) %>%
+      rename(avgFemCent=Female, avgMaleCent=Male)
+
+    formal <- CompleteAADF %>%
+      filter(!is.na(Formal.informal)) %>%
+      group_by(matNum, Formal.informal) %>%
+      summarise(Centrality=mean(degreeCentrality, na.rm=T)) %>%
+      pivot_wider(names_from = Formal.informal, values_from = Centrality) %>%
+      rename(avgFormCent=Formal, avgInformCent=Informal)
+
+    # joining the two tables and keeping all values
+    finalDataframe <- merge(gender, formal, by="matNum", all = T)
+
+    # sorting final dataframe
+    sortedDataframe <- finalDataframe %>%
+      mutate(matNum = as.numeric(matNum)) %>%
+      arrange(matNum)
+
+    return(sortedDataframe)
+}
+
+MatrixInfoDF <- MatrixLoopingFunction(filesPath)

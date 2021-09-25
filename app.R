@@ -6,7 +6,7 @@ library(shinyauthr)
 library(shinyjs)
 library(rgdal)
 library(leaflet)
-library(dplyr)
+library(tidyverse)
 library(RColorBrewer)
 
 #####
@@ -16,7 +16,8 @@ ui <- dashboardPage(title = "Statistical Capacity Indicators", skin = "blue",
     dashboardSidebar(
         sidebarMenu(
             menuItem("Dashboard", tabName = "dashboard", icon = icon("dashboard")),
-            menuItem("Data", tabName = "table", icon = icon("table"))
+            menuItem("Data", tabName = "table", icon = icon("table")),
+            menuItem("Graphs", tabName = "graph", icon = icon("chart-area"))
         ),
         collapsed = F
     ),
@@ -34,9 +35,14 @@ ui <- dashboardPage(title = "Statistical Capacity Indicators", skin = "blue",
                 )
             ),
             tabItem("table",
-                div(
+                box(title = "Data for Selected Capacity Indicator", width = 9,
                     DT::dataTableOutput("data_table"), style = "font-size:80%"
                 )
+            ),
+            tabItem("graph",
+                    box(title = "Histogram of Indicator Values", width = 8,
+                        plotOutput("chart")
+                    )
             )
         )
     )
@@ -50,8 +56,18 @@ server <- function(input, output, session) {
     #observe({
     #    updateSelectInput(session, "country", choices = country_list)
     #})
-    output$data_table = DT::renderDataTable({
-        data
+    observe({
+        output$data_table = DT::renderDataTable({
+            data_fil()
+        })
+        output$chart <- renderPlot({
+            ggplot(data_fil(), aes_string(y = names(data_fil())[startsWith(names(data_fil()),"YR")])) +
+                geom_histogram(bins = 100) +
+                coord_flip() +
+                ggtitle("Histogram") +
+                xlab("Frequency") + 
+                ylab("Capacity Indicator Values")
+        })
     })
     indicator_list <- unique(data$Series.Name)
     observe({
@@ -66,10 +82,12 @@ server <- function(input, output, session) {
     data_fil <- reactive({
         sel_data <- data %>% 
             filter(Series.Name == input$indicator) %>%
-            select(Country.Name ,contains(as.character(input$year)))
+            select(Country.Name, contains(as.character(input$year)))
         sel_df <- left_join(map@data, sel_data, by = c("CNTRY_NAME" = "Country.Name"))
         sel_df <- sel_df[,-c(1:7)]
         sel_df[,2] <- as.numeric(sel_df[,2])
+        colnames(sel_df)[1] <- "COUNTRY_NAME"
+        colnames(sel_df)[2] <- gsub("X\\d{4}[.]+(.+)[.]", "\\1", colnames(sel_df)[2])
         return(sel_df)
     })
     observe({
